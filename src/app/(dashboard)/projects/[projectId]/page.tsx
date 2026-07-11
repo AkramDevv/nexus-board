@@ -5,6 +5,7 @@ import {
     ArrowLeft,
     CalendarDays,
     ListTodo,
+    Plus,
     Settings,
     Users,
 } from "lucide-react";
@@ -13,6 +14,7 @@ import { format } from "date-fns";
 import { auth } from "../../../../../auth";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { prisma } from "@/lib/prisma";
+import { PriorityBadge } from "@/components/ui/priority-badge";
 
 type ProjectDetailsPageProps = {
     params: Promise<{
@@ -99,6 +101,15 @@ export default async function ProjectDetailsPage({
                 orderBy: {
                     createdAt: "desc",
                 },
+
+                include: {
+                    assignee: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                },
             },
 
             _count: {
@@ -113,6 +124,16 @@ export default async function ProjectDetailsPage({
     if (!project) {
         notFound();
     }
+
+    const currentMembership = project.members.find(
+        (member) =>
+            member.userId === session.user.id,
+    );
+
+    const canManageTasks =
+        project.ownerId === session.user.id ||
+        currentMembership?.role === "OWNER" ||
+        currentMembership?.role === "ADMIN";
 
     const completedTasks = project.tasks.filter(
         (task) => task.status === "DONE",
@@ -222,14 +243,26 @@ export default async function ProjectDetailsPage({
 
             <div className="mt-6 grid gap-6 xl:grid-cols-[1.5fr_1fr]">
                 <section className="rounded-2xl border border-slate-800 bg-slate-900/70">
-                    <div className="border-b border-slate-800 px-6 py-5">
-                        <h2 className="font-semibold">
-                            Project tasks
-                        </h2>
+                    <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-6 py-5">
+                        <div>
+                            <h2 className="font-semibold">
+                                Project tasks
+                            </h2>
 
-                        <p className="mt-1 text-sm text-slate-500">
-                            Tasks associated with this project
-                        </p>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Tasks associated with this project
+                            </p>
+                        </div>
+
+                        {canManageTasks ? (
+                            <Link
+                                href={`/projects/${project.id}/tasks/new`}
+                                className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500"
+                            >
+                                <Plus className="size-4" />
+                                Add task
+                            </Link>
+                        ) : null}
                     </div>
 
                     {project.tasks.length > 0 ? (
@@ -237,19 +270,42 @@ export default async function ProjectDetailsPage({
                             {project.tasks.map((task) => (
                                 <div
                                     key={task.id}
-                                    className="flex items-center justify-between gap-4 px-6 py-5"
+                                    className="px-6 py-5 transition hover:bg-slate-900"
                                 >
-                                    <div>
-                                        <p className="font-medium text-white">
-                                            {task.title}
-                                        </p>
+                                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-white">
+                                                {task.title}
+                                            </p>
 
-                                        <p className="mt-1 text-sm text-slate-600">
-                                            Priority: {task.priority}
-                                        </p>
+                                            <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-500">
+                                                {task.description ??
+                                                    "No task description has been added."}
+                                            </p>
+
+                                            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                                                <span>
+                                                    Assignee:{" "}
+                                                    {task.assignee?.name ?? "Unassigned"}
+                                                </span>
+
+                                                <span>
+                                                    Due:{" "}
+                                                    {task.dueDate
+                                                        ? format(task.dueDate, "MMM d, yyyy")
+                                                        : "No deadline"}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                                            <PriorityBadge
+                                                priority={task.priority}
+                                            />
+
+                                            <StatusBadge status={task.status} />
+                                        </div>
                                     </div>
-
-                                    <StatusBadge status={task.status} />
                                 </div>
                             ))}
                         </div>
