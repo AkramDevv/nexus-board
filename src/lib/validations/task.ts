@@ -14,6 +14,24 @@ export const taskPrioritySchema = z.enum([
   "URGENT",
 ]);
 
+const dueDateSchema = z
+  .string()
+  .optional()
+  .refine(
+    (value) => {
+      if (!value) {
+        return true;
+      }
+
+      const date = new Date(value);
+
+      return !Number.isNaN(date.getTime());
+    },
+    {
+      message: "Enter a valid due date.",
+    },
+  );
+
 export const createTaskSchema = z.object({
   projectId: z.string().min(1, "Project ID is required."),
 
@@ -30,28 +48,28 @@ export const createTaskSchema = z.object({
     .optional(),
 
   priority: taskPrioritySchema,
-
-  dueDate: z
-    .string()
-    .optional()
-    .refine(
-      (value) => {
-        if (!value) {
-          return true;
-        }
-
-        const date = new Date(value);
-
-        return !Number.isNaN(date.getTime());
-      },
-      {
-        message: "Enter a valid due date.",
-      },
-    ),
-
+  dueDate: dueDateSchema,
   assigneeId: z.string().optional(),
+});
+
+export const updateTaskSchema = createTaskSchema.extend({
+  taskId: z.string().min(1, "Task ID is required."),
+  status: taskStatusSchema,
+});
+
+export const updateTaskStatusSchema = z.object({
+  taskId: z.string().min(1, "Task ID is required."),
+  status: taskStatusSchema,
+});
+
+export const deleteTaskSchema = z.object({
+  taskId: z.string().min(1, "Task ID is required."),
 });
 
 export type CreateTaskInput = z.infer<
   typeof createTaskSchema
+>;
+
+export type UpdateTaskInput = z.infer<
+  typeof updateTaskSchema
 >;

@@ -274,9 +274,12 @@ export default async function ProjectDetailsPage({
                                 >
                                     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                                         <div className="min-w-0">
-                                            <p className="font-medium text-white">
+                                            <Link
+                                                href={`/tasks/${task.id}`}
+                                                className="font-medium text-white transition hover:text-blue-400"
+                                            >
                                                 {task.title}
-                                            </p>
+                                            </Link>
 
                                             <p className="mt-2 line-clamp-2 text-sm leading-5 text-slate-500">
                                                 {task.description ??
