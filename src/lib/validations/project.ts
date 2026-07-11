@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const projectStatusSchema = z.enum([
+  "ACTIVE",
+  "COMPLETED",
+  "ARCHIVED",
+]);
+
 export const createProjectSchema = z.object({
   name: z
     .string()
@@ -18,6 +24,19 @@ export const createProjectSchema = z.object({
     .regex(/^#[0-9A-Fa-f]{6}$/, "Select a valid project color."),
 });
 
+export const updateProjectSchema = createProjectSchema.extend({
+  projectId: z.string().min(1, "Project ID is required."),
+  status: projectStatusSchema,
+});
+
+export const deleteProjectSchema = z.object({
+  projectId: z.string().min(1, "Project ID is required."),
+});
+
 export type CreateProjectInput = z.infer<
   typeof createProjectSchema
+>;
+
+export type UpdateProjectInput = z.infer<
+  typeof updateProjectSchema
 >;
